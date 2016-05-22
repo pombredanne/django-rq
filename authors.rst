@@ -4,3 +4,5 @@ Author:
 Contributors:
 * Gilang Chandrasa
 * Jean-Philippe Serafin
+* Alan Johnson
+* Leszek Piątek
