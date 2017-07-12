@@ -13,7 +13,7 @@ and easily use them in your project.
 Requirements
 ============
 
-* `Django <https://www.djangoproject.com/>`_ (1.5+)
+* `Django <https://www.djangoproject.com/>`_ (1.8+)
 * `RQ`_
 
 ============
@@ -64,9 +64,9 @@ Installation
 
 .. code-block:: python
 
-    urlpatterns += patterns('',
+    urlpatterns += [
         url(r'^django-rq/', include('django_rq.urls')),
-    )
+    ]
 
 =====
 Usage
@@ -150,6 +150,11 @@ with the path to your worker::
 
     python manage.py rqworker high default low --worker-class 'path.to.GeventWorker'
 
+If you need to use a custom queue class, you can pass in the ``--queue-class`` flag
+with the path to your queue class::
+
+    python manage.py rqworker high default low --queue-class 'path.to.CustomQueue'
+
 Support for RQ Scheduler
 ------------------------
 
@@ -163,7 +168,7 @@ instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
     scheduler = django_rq.get_scheduler('default')
     job = scheduler.enqueue_at(datetime(2020, 10, 10), func)
 
-You can use also use the management command ``rqscheduler`` to start the scheduler::
+You can also use the management command ``rqscheduler`` to start the scheduler::
 
     python manage.py rqscheduler
 
@@ -270,6 +275,33 @@ transports (the default transport). Please configure ``Raven`` to use
 
 For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`_.
 
+Custom queue classes
+--------------------
+
+By default, every queue will use ``DjangoRQ`` class. If you want to use a custom queue class, you can do so
+by adding a ``QUEUE_CLASS`` option on a per queue basis in ``RQ_QUEUES``:
+
+.. code-block:: python
+
+    RQ_QUEUES = {
+        'default': {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+            'QUEUE_CLASS': 'module.path.CustomClass',
+        }
+    }
+
+or you can specify ``DjangoRQ`` to use a custom class for all your queues in ``RQ`` settings:
+
+.. code-block:: python
+
+    RQ = {
+        'QUEUE_CLASS': 'module.path.CustomClass',
+    }
+
+Custom queue classes should inherit from ``django_rq.queues.DjangoRQ``.
+
 Testing tip
 -----------
 
@@ -277,7 +309,7 @@ For an easier testing process, you can run a worker synchronously this way:
 
 .. code-block:: python
 
-    from django.test impor TestCase
+    from django.test import TestCase
     from django_rq import get_worker
 
     class MyTest(TestCase):
@@ -352,136 +384,8 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
-0.9.1
------
-* Added ``-i`` and ``--queue`` options to `rqscheduler` management command. Thanks @mbodock and @sbussetti!
-* Added ``--pid`` option to ``rqworker`` management command. Thanks @ydaniv!
-* Admin interface fixes for Django 1.9. Thanks @philippbosch!
-* Compatibility fix for ``django-redis-cache``. Thanks @scream4ik!
-* **Backward incompatible**: Exception handlers are now defined via ``RQ_EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @sbussetti!
-* Queues in django-admin are now sorted by name. Thanks @pnuckowski! 
+See `changelog <https://github.com/ui/django-rq/blob/master/CHANGELOG.rst>`.
 
 
-
-0.9.0
------
-* Support for Django 1.9. Thanks @aaugustin and @viaregio!
-* ``rqworker`` management command now accepts ``--worker-ttl`` argument. Thanks pnuckowski!
-* You can now easily specify custom ``EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @xuhcc!
-* ``django-rq`` now requires RQ >= 0.5.5
-
-0.8.0
------
-* You can now view deferred, finished and currently active jobs from admin interface.
-* Better support for Django 1.8. Thanks @epicserve and @seiryuz!
-* Requires RQ >= 0.5.
-* You can now use `StrictRedis` with Django-RQ. Thanks @wastrachan!
-
-0.7.0
------
-* Added ``rqenqueue`` management command for easy scheduling of tasks (e.g via cron).
-  Thanks @jezdez!
-* You can now bulk delete/requeue jobs from the admin interface. Thanks @lechup!
-* ``DEFAULT_TIMEOUT`` for each queue can now be configured via ``settings.py``.
-  Thanks @lechup!
-
-0.6.2
------
-* Compatibility with ``RQ`` >= 0.4.0
-* Adds the ability to clear a queue from admin interface. Thanks @hvdklauw!
-* ``rq_job_detail`` now returns a 404 instead of 500 when fetching a non existing job.
-* ``rqworker`` command now supports ``-name`` and ``--worker-class`` parameters.
-
-0.6.1
------
-* Adds compatibility with ``django-redis`` >= 3.4.0
-
-0.6.0
------
-* Python 3 compatibility
-* Added ``rqscheduler`` management command
-* ``get_queue`` and ``get_queues`` now accept ``autocommit`` argument
-
-
-0.5.1
------
-* Bugfix to ``DjangoRQ`` class
-
-
-0.5.0
------
-* Added ``ASYNC`` option to ``RQ_QUEUES``
-* Added ``get_failed_queue`` shortcut
-* Django-RQ can now reuse existing ``django-redis`` cache connections
-* Added an experimental (and undocumented) ``AUTOCOMMIT`` option, use at your own risk
-
-
-0.4.7
------
-* Make admin template override optional.
-
-0.4.6
------
-* ``get_queue`` now accepts ``async`` and ``default_timeout`` arguments
-* Minor updates to admin interface
-
-0.4.5
------
-* Added the ability to requeue failed jobs in the admin interface
-* In addition to deleting the actual job from Redis, job id is now also
-  correctly removed from the queue
-* Bumped up ``RQ`` requirement to 0.3.4 as earlier versions cause logging to fail
-  (thanks @hugorodgerbrown)
-
-Version 0.4.4
--------------
-* ``rqworker`` management command now uses django.utils.log.dictConfig so it's
-  usable on Python 2.6
-
-Version 0.4.3
--------------
-
-* Added ``--burst`` option to ``rqworker`` management command
-* Added support for Python's ``logging``, introduced in ``RQ`` 0.3.3
-* Fixed a bug that causes jobs using RQ's new ``get_current_job`` to fail when
-  executed through the ``rqworker`` management command
-
-Version 0.4.2
--------------
-Fixed a minor bug in accessing `rq_job_detail` view.
-
-Version 0.4.1
--------------
-More improvements to `/admin/django_rq/`:
-
-* Views now require staff permission
-* Now you can delete jobs from queue
-* Failed jobs' tracebacks are better formatted
-
-Version 0.4.0
--------------
-Greatly improved `/admin/django_rq/`, now you can:
-
-* See jobs in each queue, including failed queue
-* See each job's detailed information
-
-Version 0.3.2
--------------
-* Simplified ``@job`` decorator syntax for enqueuing to "default" queue.
-
-Version 0.3.1
--------------
-* Queues can now be configured using the URL parameter in ``settings.py``.
-
-Version 0.3.0
--------------
-* Added support for RQ's ``@job`` decorator
-* Added ``get_worker`` command
-
-Version 0.2.2
--------------
-* "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
-
-
-.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.png?branch=master
+.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.svg?branch=master
    :target: https://travis-ci.org/ui/django-rq
